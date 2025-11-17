@@ -22,7 +22,7 @@ function Get-RedditPosts {
 }
 
 # ============================================
-# UPDATE LISTVIEW
+# UPDATE LISTVIEW AND EXPORT TEXT FILE
 # ============================================
 function Update-PostsList {
     param($listView)
@@ -30,11 +30,31 @@ function Update-PostsList {
     $listView.Items.Clear()
     $posts = Get-RedditPosts
 
+    # Define output file path
+    $outputDir = "C:\Users\Tom\Desktop\_\Rapport-Reddit"
+    if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir | Out-Null }
+    $outputPath = Join-Path $outputDir "RedditTop10.txt"
+
+    $fileContent = ""
+
     foreach ($post in $posts) {
         $title = $post.data.title
+        $url = "https://www.reddit.com" + $post.data.permalink
+
         $item = New-Object System.Windows.Forms.ListViewItem($title)
         $item.Tag = $post.data.permalink
         $listView.Items.Add($item)
+
+        # Add to file content
+        $fileContent += "Titre : $title`r`nURL   : $url`r`n`r`n"
+    }
+
+    # Write to file
+    try {
+        $fileContent | Out-File -FilePath $outputPath -Encoding UTF8
+    }
+    catch {
+        [System.Windows.Forms.MessageBox]::Show("Failed to write summary file: $outputPath")
     }
 }
 
@@ -52,13 +72,13 @@ function Open-SelectedPost {
 # FORM
 # ============================================
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Top 10 des meilleurs post reddit aujourd'hui :"   # <-- title changed
+$form.Text = "Top 10 des meilleurs post reddit aujourd'hui :"
 $form.Size = New-Object System.Drawing.Size(850, 500)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
 
-# LISTVIEW (fixed size)
+# LISTVIEW
 $listView = New-Object System.Windows.Forms.ListView
 $listView.Location = New-Object System.Drawing.Point(10, 10)
 $listView.Size = New-Object System.Drawing.Size(820, 380)
@@ -66,7 +86,7 @@ $listView.View = "Details"
 $listView.FullRowSelect = $true
 $listView.GridLines = $true
 $listView.Font = New-Object System.Drawing.Font("Segoe UI", 10)
-$listView.Columns.Add("Titre", 800) | Out-Null   # <-- column header changed
+$listView.Columns.Add("Titre", 800) | Out-Null
 $form.Controls.Add($listView)
 
 # BUTTON Refresh
